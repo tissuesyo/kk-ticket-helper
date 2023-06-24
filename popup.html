@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>KKTIX Ticket</title>
+    <meta charset="UTF-8" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+      crossorigin="anonymous"
+    />
+    <link href="./css/all.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container mt-1">
+      <h2>購票資訊設定</h2>
+      <form id="ticketForm">
+        <div class="mt-3">
+          <label for="ticketNum">購買票數 :</label>
+          <select class="form-control" id="ticketNum" required>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+        <div class="mt-3">
+          <label for="position">Prefer 價位區間 :</label>
+          <input
+            type="text"
+            id="position"
+            class="form-control"
+            placeholder="按需求順序並以逗號區隔價位 ex: 3000, 2800, 800"
+            required
+          />
+        </div>
+        <div class="mt-3 tool-bar">
+          <button id="saveTicketBtn" type="button" class="btn btn-primary">儲存設定</button>
+        </div>
+      </form>
+    </div>
+
+    <hr />
+    <div class="container mt-1">
+      <h2>重整畫面設定</h2>
+      <form id="refreshForm">
+        <div class="mt-2">
+          <input type="number" id="hour" class="form-control input-time" required />
+          <label for="hour">點</label>
+          <input type="number" id="minute" class="form-control input-time" required />
+          <label for="minute">分</label>
+          <input type="number" id="second" class="form-control input-time" required />
+          <label for="second">秒</label>
+        </div>
+        <div class="mt-3 tool-bar">
+          <button id="saveRefreshBtn" type="button" class="btn btn-success">儲存時間</button>
+        </div>
+      </form>
+    </div>
+
+    <hr />
+    <div class="container mt-1">
+      <h2>清除設定</h2>
+      <div class="mt-3 tool-bar">
+        <button id="clearTabStorageBtn" type="button" class="btn btn-secondary">清除這個分頁的票券設定</button>
+        <button id="clearAllStorageBtn" type="button" class="btn btn-secondary">清除所有分頁的票券設定</button>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

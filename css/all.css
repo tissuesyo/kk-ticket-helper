@@ -1,0 +1,18 @@
+body {
+  width: 500px; 
+  padding: 10px;
+}
+
+.input-time {
+  width: 100px;
+  display:inline-block;
+}
+
+.tool-bar {
+  display: flex; 
+  justify-content: flex-end;
+}
+
+button + button {
+  margin-left: 10px;
+}
