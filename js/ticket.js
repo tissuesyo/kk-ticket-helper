@@ -67,7 +67,7 @@ function buyTicket(expectPrices, tickectNumber) {
   // TODO: Captcha timing
   if (checkIsCaptchaExisted()) {
     const intervalid = setInterval(() => submit(), 500);
-    setTimeout(() => clearInterval(intervalid), 4000);
+    setTimeout(() => clearInterval(intervalid), 5000);
   }
 }
 
