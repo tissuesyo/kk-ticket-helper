@@ -25,7 +25,32 @@
     {
       "matches": ["https://kktix.com/events/*/registrations/new"],
       "run_at": "document_start",
-      "js": ["js/ticket.js"]
+      "js": ["js/kktix-ticket.js"]
+    },
+    {
+      "matches": ["https://tixcraft.com/activity/detail/*", "https://tixcraft.com/activity/game/*"],
+      "run_at": "document_start",
+      "js": ["js/tixcraft-step1-date.js"]
+    },
+    {
+      "matches": ["https://tixcraft.com/ticket/area/*"],
+      "run_at": "document_start",
+      "js": ["js/tixcraft-step2-area.js"]
+    },
+    {
+      "matches": ["https://tixcraft.com/ticket/ticket/*"],
+      "run_at": "document_start",
+      "js": ["js/tixcraft-step3-number.js"]
+    },
+    {
+      "matches": ["https://ticket.ibon.com.tw/ActivityInfo/Details/*"],
+      "run_at": "document_start",
+      "js": ["js/ibon-step1-date.js"]
+    },
+    {
+      "matches": ["https://orders.ibon.com.tw/application/*"],
+      "run_at": "document_start",
+      "js": ["js/ibon-step2-area.js"]
     }
   ],
   "commands": {
@@ -34,7 +59,7 @@
         "default": "Ctrl+Shift+K",
         "mac": "MacCtrl+Shift+K"
       },
-      "description": "Opens popup.html"
+      "description": "Open popup.html"
     }
   }
 }

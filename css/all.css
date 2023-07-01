@@ -9,8 +9,13 @@ body {
 }
 
 .tool-bar {
-  display: flex; 
+  display: flex;
   justify-content: flex-end;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
 }
 
 button + button {

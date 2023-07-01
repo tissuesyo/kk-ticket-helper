@@ -1,5 +1,5 @@
 function refreshPage(hours, minutes, seconds) {
-  console.log(" === register refresh timer ===");
+  console.log(' === register refresh timer ===');
   const now = new Date();
   const expectTime = new Date();
   const currentHour = now.getHours();
@@ -21,60 +21,16 @@ function refreshPage(hours, minutes, seconds) {
   setTimeout(() => window.location.reload(true), timeout);
 }
 
-function buyTicket(expectPrices, tickectNumber) {
-  console.log(" === execute buy ticket ===");
-  const twdTransformer = new Intl.NumberFormat('zh-TW', {
-    style: 'currency',
-    currency: 'TWD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
-  const searchPrices = expectPrices.map((price) => twdTransformer.format(price));
-
-  // step 1: 尋找價格
-  const allPriceEles = Array.from(document.querySelectorAll("span[class='ticket-price']"));
-  let isFindPosotion;
-  searchPrices.every((price) => {
-    if (isFindPosotion) {
-      return false;
-    }
-
-    let [matchPriceEle] = allPriceEles.filter((span) => span.textContent.includes(price));
-    // step 2: 輸入需求數量
-    const numberEle = matchPriceEle?.parentElement
-      .querySelector("span[ng-if='purchasableAndSelectable']")
-      ?.querySelector("input[type='text']");
-    if (numberEle) {
-      numberEle.value = tickectNumber;
-      numberEle.dispatchEvent(new Event('change'));
-      isFindPosotion = true;
-    } else {
-      console.log(`${price} - 區域沒票了  殘念 T_T`);
-    }
-    return true;
-  });
-
-  isFindPosotion || console.log('想買的區域都沒票囉! 趕快重新選擇了');
-
-  // step 3: 同意服務條款
-  const agreeChkbox = document.getElementById('person_agree_terms');
-  if (agreeChkbox) {
-    agreeChkbox.checked || agreeChkbox.click();
-  }
-
-  // step 4: 送出
-  submit();
-  // TODO: Captcha timing
-  if (checkIsCaptchaExisted()) {
-    const intervalid = setInterval(() => submit(), 500);
-    setTimeout(() => clearInterval(intervalid), 5000);
-  }
-}
-
-function submit() {
-  const buttonEles = Array.from(document.getElementsByClassName('btn-primary'));
-  let [next] = buttonEles.filter((btn) => btn.textContent.includes('下一步'));
-  next?.click();
+function buyTicket(preferPositions) {
+  console.log(' === execute buy ticket === ');
+  // 所有還有剩餘位置的 heperlink
+  const allPositions = Array.from(document.querySelectorAll("ul[class='area-list'] a"));
+  const [matchPosition] = allPositions.filter(
+    (ele) => preferPositions.filter((prefer) => ele.innerText.includes(prefer)).length > 0
+  );
+  console.log('matchPosition', matchPosition);
+  matchPosition?.click();
+  setTimeout(() => matchPosition?.click(), 300);
 }
 
 function onElementLoaded(elementToObserve, parentStaticElement) {
@@ -106,17 +62,12 @@ function onElementLoaded(elementToObserve, parentStaticElement) {
   return promise;
 }
 
-function checkIsCaptchaExisted() {
-  const captchaDiv = document.getElementsByClassName('event-captcha-info');
-  return captchaDiv && captchaDiv[0] && captchaDiv[0].childElementCount > 0;
-}
-
 function getTicketStorageId(tabId) {
-  return `kktix-${tabId}`;
+  return `tixcraft-${tabId}`;
 }
 
 function getRefreshStorageId(tabId) {
-  return `kktix-refresh-${tabId}`;
+  return `tixcraft-refresh-${tabId}`;
 }
 
 function triggerRefresh(refeshStorageKey) {
@@ -131,9 +82,9 @@ function triggerRefresh(refeshStorageKey) {
 function triggerBuyTicket(ticketStorageKey) {
   chrome.storage.local.get(ticketStorageKey, (resp) => {
     if (resp[ticketStorageKey]) {
-      const { position, ticketNum } = resp[ticketStorageKey];
-      const preferPosition = position.split(',');
-      buyTicket(preferPosition, ticketNum);
+      const { position } = resp[ticketStorageKey];
+      const preferPositions = position.split(',');
+      buyTicket(preferPositions);
     }
   });
 }
@@ -143,7 +94,6 @@ function addStorageChangeListener(tabId) {
     console.log(' === storage change === ', changes);
     const refreshStorageKey = getRefreshStorageId(tabId);
     const ticketStorageKey = getTicketStorageId(tabId);
-
     if (changes[refreshStorageKey]) {
       triggerRefresh(refreshStorageKey);
     }
@@ -155,21 +105,15 @@ function addStorageChangeListener(tabId) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  console.log(" !!! DOMContentLoaded !!! ");
+  console.log(' !!! DOMContentLoaded !!! ');
   chrome.runtime.sendMessage({ text: 'getTabId' }, ({ tabId }) => {
     triggerRefresh(getRefreshStorageId(tabId));
     addStorageChangeListener(tabId);
+    triggerBuyTicket(getTicketStorageId(tabId));
   });
 });
 
-// TODO: captcha timing
-window.addEventListener('load', () => {
-  if (checkIsCaptchaExisted()) {
-    submit();
-  }
-});
-
-onElementLoaded("span[ng-if='purchasableAndSelectable']")
+onElementLoaded("div[id='selectseat']")
   .then(() => {
     chrome.runtime.sendMessage({ text: 'getTabId' }, ({ tabId }) => {
       triggerBuyTicket(getTicketStorageId(tabId));

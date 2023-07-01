@@ -16,6 +16,24 @@
       <h2>購票資訊設定</h2>
       <form id="ticketForm">
         <div class="mt-3">
+          <label for="seller">售票單位 :</label>
+          <select class="form-control" id="seller" required>
+            <option value="kktix">KKTIX</option>
+            <option value="tixcraft">拓元</option>
+            <option value="ibon">ibon</option>
+          </select>
+        </div>
+        <div class="mt-3" id="dateContainer">
+          <label for="showTime">演出日期 :</label>
+          <input
+            type="text"
+            id="showTime"
+            class="form-control"
+            placeholder="請填入日期，格式為 2023/11/8"
+            required
+          />
+        </div>
+        <div class="mt-3">
           <label for="ticketNum">購買票數 :</label>
           <select class="form-control" id="ticketNum" required>
             <option value="1">1</option>
@@ -24,13 +42,23 @@
             <option value="4">4</option>
           </select>
         </div>
-        <div class="mt-3">
-          <label for="position">Prefer 價位區間 :</label>
+        <div class="mt-3" id="priceContainer">
+          <label for="price">Prefer 價位區間 :</label>
+          <input
+            type="text"
+            id="price"
+            class="form-control"
+            placeholder="按需求順序並以逗號區隔價位 ex: 3000, 2800, 800"
+            required
+          />
+        </div>
+        <div class="mt-3" id="positionContainer">
+          <label for="position">Prefer 座位區域 :</label>
           <input
             type="text"
             id="position"
             class="form-control"
-            placeholder="按需求順序並以逗號區隔價位 ex: 3000, 2800, 800"
+            placeholder="按需求順序並以逗號區隔座位名稱 ex: '一樓站區', '二樓站區'"
             required
           />
         </div>
@@ -59,13 +87,12 @@
     </div>
 
     <hr />
-    <div class="container mt-1">
-      <h2>清除設定</h2>
-      <div class="mt-3 tool-bar">
+    <!-- <div class="container mt-1"> -->
+      <div class="footer">
         <button id="clearTabStorageBtn" type="button" class="btn btn-secondary">清除這個分頁的票券設定</button>
         <button id="clearAllStorageBtn" type="button" class="btn btn-secondary">清除所有分頁的票券設定</button>
       </div>
-    </div>
+    <!-- </div> -->
     <script src="popup.js"></script>
   </body>
 </html>
