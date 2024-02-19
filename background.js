@@ -6,6 +6,29 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.text === 'getTabId') {
     sendResponse({ tabId: sender.tab.id });
   }
+
+  if (msg.action === 'checkForTickets') {
+    const alertEles = Array.from(document.querySelectorAll("div[class*='alert']"));
+    const [matchEle] = alertEles.filter((ele) => ele.innerText.includes('沒有任何可以購買的票券'));
+    console.log('count', msg.count);
+    if (!matchEle) {
+      const notificationOptions = {
+        type: 'basic',
+        iconUrl: './img/logo_48x48.png',
+        title: 'OMG 有票了',
+        message: `有剩票快搶`,
+        isClickable: true,
+        priority: 2,
+        eventTime: currentTimeAsMs + oneMinuteAsMs,
+      };
+      chrome.notifications.create(notificationOptions);
+  
+      chrome.notifications.onClicked.addListener((notificationId) => {
+        chrome.tabs.update(msg.tabId, { selected: true });
+      });
+      clearInterval(intervalId);
+    }
+  }
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -70,7 +93,7 @@ function isGetKktixTicket(url) {
   }
 }
 
-function isGetIbonTicket(url) {
+function isGetIbonTicket(url) { 
   // Example: https://orders.ibon.com.tw/application/UTK02/UTK0201_001.aspx?PERFORMANCE_ID=B058LE8P&GROUP_ID=12&PERFORMANCE_PRICE_AREA_ID=B058LNMI
   return url.startsWith('https://orders.ibon.com.tw/application/') && url.includes('PERFORMANCE_PRICE_AREA_ID');
 }

@@ -14,6 +14,9 @@ const hourEle = document.getElementById('hour');
 const minuteEle = document.getElementById('minute');
 const secondEle = document.getElementById('second');
 
+// 清票檢查
+var intervalId;
+
 function getTicketStorageId(seller, tabId) {
   return `${seller}-${tabId}`;
 }
@@ -154,8 +157,25 @@ function getSeller(url) {
   return source ?? 'kktix';
 }
 
+function startChecking() {
+  intervalSeconds = parseInt(document.getElementById('intervalInput').value, 10);
+  intervalId = setInterval(() => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0].id;
+      chrome.tabs.sendMessage(tabId, { action: 'checkForTickets' , tabId, count });
+      chrome.tabs.reload(tabId, { bypassCache: true });
+    });
+  }, intervalSeconds * 1000);
+}
+
+function stopChecking() {
+  clearInterval(intervalId);
+}
+
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('saveTicketBtn').addEventListener('click', saveTicketConfig);
 document.getElementById('saveRefreshBtn').addEventListener('click', saveRefreshConfig);
 document.getElementById('clearTabStorageBtn').addEventListener('click', clearTabStorage);
 document.getElementById('clearAllStorageBtn').addEventListener('click', clearAllStorage);
+document.getElementById('refreshTicketBtn').addEventListener('click', startChecking);
+document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
