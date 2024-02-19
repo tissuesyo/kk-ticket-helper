@@ -10,7 +10,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'checkForTickets') {
     const alertEles = Array.from(document.querySelectorAll("div[class*='alert']"));
     const [matchEle] = alertEles.filter((ele) => ele.innerText.includes('沒有任何可以購買的票券'));
-    console.log('count', msg.count);
+   
     if (!matchEle) {
       const notificationOptions = {
         type: 'basic',

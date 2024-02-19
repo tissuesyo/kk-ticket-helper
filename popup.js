@@ -162,7 +162,7 @@ function startChecking() {
   intervalId = setInterval(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tabId = tabs[0].id;
-      chrome.tabs.sendMessage(tabId, { action: 'checkForTickets' , tabId, count });
+      chrome.tabs.sendMessage(tabId, { action: 'checkForTickets' , tabId });
       chrome.tabs.reload(tabId, { bypassCache: true });
     });
   }, intervalSeconds * 1000);
