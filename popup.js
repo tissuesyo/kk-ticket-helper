@@ -14,6 +14,9 @@ const hourEle = document.getElementById('hour');
 const minuteEle = document.getElementById('minute');
 const secondEle = document.getElementById('second');
 
+// 搶清票 Field Element
+const intervalEle = document.getElementById('intervalInput');
+
 // 清票檢查
 var intervalId;
 
@@ -23,6 +26,10 @@ function getTicketStorageId(seller, tabId) {
 
 function getRefreshStorageId(seller, tabId) {
   return `${seller}-refresh-${tabId}`;
+}
+
+function getRemainingStorageId(seller, tabId) {
+  return `${seller}-remaining-${tabId}`;
 }
 
 function isFieldValid(elements) {
@@ -80,6 +87,32 @@ function saveRefreshConfig() {
       );
 
       console.log('refresh setting', chrome.storage.local.get(storageKey));
+    }
+    console.groupEnd();
+  });
+}
+
+function saveRemainingConfig() {
+  if (!isFieldValid([intervalEle])) {
+    alert('請填寫間隔的時間');
+    document.getElementById('intervalForm').classList.add('was-validated');
+    return;
+  }
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    console.group('save remaining ticket Config...');
+    const currTab = tabs[0];
+
+    if (currTab) {
+      const { id, url } = currTab;
+      const seller = getSeller(url);
+      const storageKey = getRemainingStorageId(seller, id);
+      chrome.storage.local.set(
+        { [storageKey]: { interval: intervalEle.value } },
+        () => alert('儲存成功 - 間隔時間設定')
+      );
+
+      console.log('Refresh interval setting', chrome.storage.local.get(storageKey));
     }
     console.groupEnd();
   });
@@ -157,17 +190,6 @@ function getSeller(url) {
   return source ?? 'kktix';
 }
 
-function startChecking() {
-  intervalSeconds = parseInt(document.getElementById('intervalInput').value, 10);
-  intervalId = setInterval(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tabId = tabs[0].id;
-      chrome.tabs.sendMessage(tabId, { action: 'checkForTickets' , tabId });
-      chrome.tabs.reload(tabId, { bypassCache: true });
-    });
-  }, intervalSeconds * 1000);
-}
-
 function stopChecking() {
   clearInterval(intervalId);
 }
@@ -177,5 +199,5 @@ document.getElementById('saveTicketBtn').addEventListener('click', saveTicketCon
 document.getElementById('saveRefreshBtn').addEventListener('click', saveRefreshConfig);
 document.getElementById('clearTabStorageBtn').addEventListener('click', clearTabStorage);
 document.getElementById('clearAllStorageBtn').addEventListener('click', clearAllStorage);
-document.getElementById('refreshTicketBtn').addEventListener('click', startChecking);
+document.getElementById('refreshTicketBtn').addEventListener('click', saveRemainingConfig);
 document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
