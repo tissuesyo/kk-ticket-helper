@@ -58,31 +58,38 @@ function checkTicketExisted(expectPrices, tickectNumber) {
   return isFindPosotion;
 }
 
-function buyTicket(expectPrices, tickectNumber, tabId) {
-  console.log(" === execute buy ticket ===");
+function buyTicket(ticketInfo, tabId) {
+  console.log(" === execute buy ticket ===", ticketInfo);
+  const { price, ticketNum, captchaAnswer } = ticketInfo;
+  const expectPrices = price.split(',');
+
   // Step 1: 檢查是不是還有票，有票的話會填入數量
-  let isFindPosotion = checkTicketExisted(expectPrices, tickectNumber);
-  // isFindPosotion || console.log('想買的區域都沒票囉! 趕快重新選擇了');
+  let isFindPosotion = checkTicketExisted(expectPrices, ticketNum);
   if (!isFindPosotion) {
     console.log('想買的區域都沒票囉! 趕快重新選擇了');
     const remainingStorageKey = getRemainingStorageId(tabId);
 
     chrome.storage.local.get(remainingStorageKey, (resp) => {
-      const { interval } = resp[remainingStorageKey];
+      const interval = resp[remainingStorageKey]?.interval;
       if (interval && !isFindPosotion) {
-        console.log('Should trigge Refresh with interval', interval);
         setTimeout(() => window.location.reload(true), parseInt(interval, 10) * 1000);
       }
     });
   }
+  // step 2: 如果有問問題的話，可帶入答案
+  const captchaInput = document.querySelectorAll("input[name='captcha_answer']")[0];
+  if (captchaInput) {
+    captchaInput.value = captchaAnswer;
+    captchaInput.dispatchEvent(new Event('change'));
+  }
  
-  // step 2: 同意服務條款
+  // step 3: 同意服務條款
   const agreeChkbox = document.getElementById('person_agree_terms');
   if (agreeChkbox) {
     agreeChkbox.checked || agreeChkbox.click();
   }
 
-  // step 3: 送出
+  // step 4: 送出
   submit();
   // TODO: Captcha timing
   if (checkIsCaptchaExisted()) {
@@ -155,26 +162,25 @@ function triggerRefresh(refeshStorageKey) {
 
 // TODO:
 function triggerIntervalRefresh(tabId) {
-  const ticketStorageKey = getTicketStorageId(tabId);
   const remainingStorageKey = getRemainingStorageId(tabId);
-
-  chrome.storage.local.get(remainingStorageKey, (resp) => {
-    const { interval } = resp[remainingStorageKey];
-    chrome.storage.local.get(ticketStorageKey, (resp) => {
-      if (resp[ticketStorageKey] && interval) {
-        triggerBuyTicket(tabId);
-      }
-    });
-  });
+  getAndExecuteFromLocalStorage(remainingStorageKey, (itervalData) => {
+    if (itervalData) {
+      const { interval } = itervalData;
+      const ticketStorageKey = getTicketStorageId(tabId);
+      chrome.storage.local.get(ticketStorageKey, (resp) => {
+        if (resp[ticketStorageKey] && interval) {
+          triggerBuyTicket(tabId);
+        }
+      });
+    }
+  }, tabId);
 }
 
 function triggerBuyTicket(tabId) {
   const ticketStorageKey = getTicketStorageId(tabId);
   chrome.storage.local.get(ticketStorageKey, (resp) => {
     if (resp[ticketStorageKey]) {
-      const { price, ticketNum } = resp[ticketStorageKey];
-      const preferPrice = price.split(',');
-      buyTicket(preferPrice, ticketNum, tabId);
+      buyTicket(resp[ticketStorageKey], tabId);
     }
   });
 }
@@ -182,32 +188,31 @@ function triggerBuyTicket(tabId) {
 function addStorageChangeListener(tabId) {
   chrome.storage.local.onChanged.addListener((changes) => {
     console.log(' === storage change === ', changes);
-    const refreshStorageKey = getRefreshStorageId(tabId);
-    const remainingStorageKey = getRemainingStorageId(tabId);
-
-    if (changes[refreshStorageKey]) {
+    if (changes[getRefreshStorageId(tabId)]) {
       triggerRefresh(refreshStorageKey);
     }
 
-    if (changes[ticketStorageKey]) {
+    if (changes[getTicketStorageId(tabId)]) {
       triggerBuyTicket(tabId);
     }
 
-    if (changes[remainingStorageKey]) {
+    if (changes[getRemainingStorageId(tabId)]) {
       triggerIntervalRefresh(tabId);
     }
   });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  console.log(" !!! DOMContentLoaded !!! ");
-  chrome.runtime.sendMessage({ text: 'getTabId' }, ({ tabId }) => {
-    triggerRefresh(getRefreshStorageId(tabId));
-    setTimeout(() => {
-      triggerIntervalRefresh(tabId);
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    console.log(" !!! DOMContentLoaded !!! ");
+    getTabIdAndExecute((tabId) => {
+      triggerRefresh(getRefreshStorageId(tabId));
+      setTimeout(() => triggerIntervalRefresh(tabId));
+      addStorageChangeListener(tabId);
     });
-    addStorageChangeListener(tabId);
-  });
+  } catch (error) {
+    console.error('Error during DOMContentLoaded:', error);
+  }
 });
 
 // TODO: captcha timing
@@ -217,15 +222,50 @@ window.addEventListener('load', () => {
   }
 });
 
+// TODO: 這段需要嗎? 忘記一開始為什麼要搭配這個了???
 onElementLoaded("span[ng-if='purchasableAndSelectable']")
   .then(() => {
     console.log('onElementLoaded.....');
-    chrome.runtime.sendMessage({ text: 'getTabId' }, ({ tabId }) => {
-      triggerBuyTicket(tabId);
-    });
+    getTabIdAndExecute((tabId) => triggerBuyTicket(tabId));
   })
   .catch((err) => console.error('some error', err));
 
+async function getTabId() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ text: 'getTabId' }, (result) => {
+      if (result.tabId) {
+        resolve(result.tabId);
+      } else {
+        reject(new Error('Unable to get tabId.'));
+      }
+    });
+  });
+}
+  
+async function getTabIdAndExecute(callback) {
+  try {
+    const tabId = await getTabId();
+    callback(tabId);
+  } catch (error) {
+    console.error('Error getting tabId:', error);
+  }
+}
 
-// TODO: 驗證碼, 自動答題 自動更新
-/// document.getElementsByName('captcha_answer')[0].value = 'OSN'
+async function getFromLocalStorage(key) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, (result) => {
+      resolve(result[key] || null);
+    });
+  });
+}
+
+async function getAndExecuteFromLocalStorage(key, callback, tabId) {
+  try {
+    const data = await getFromLocalStorage(key);
+    if (data) {
+      callback(data, tabId);
+    }
+  } catch (error) {
+    console.error(`Error getting data for key ${key}:`, error);
+  }
+}

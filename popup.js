@@ -3,11 +3,13 @@ const priceEle = document.getElementById('price');
 const ticketNumEle = document.getElementById('ticketNum');
 const showTimeEle = document.getElementById('showTime');
 const positionEle = document.getElementById('position');
+const captchaAnswerEle = document.getElementById('captchaAnswer');
 
 // 票券資訊 Div container
 const dateContainer = document.getElementById('dateContainer');
 const positionContainer = document.getElementById('positionContainer');
 const priceContainer = document.getElementById('priceContainer');
+const captchaAnswerContainer = document.getElementById('captchaContainer');
 
 // 時間資訊 Field Element
 const hourEle = document.getElementById('hour');
@@ -18,27 +20,18 @@ const secondEle = document.getElementById('second');
 const intervalEle = document.getElementById('intervalInput');
 
 // 清票檢查
-var intervalId;
+let intervalId;
 
-function getTicketStorageId(seller, tabId) {
-  return `${seller}-${tabId}`;
-}
-
-function getRefreshStorageId(seller, tabId) {
-  return `${seller}-refresh-${tabId}`;
-}
-
-function getRemainingStorageId(seller, tabId) {
-  return `${seller}-remaining-${tabId}`;
-}
-
-function isFieldValid(elements) {
-  return elements.every((ele) => ele && ele.value != null && ele.value.length > 0);
-}
+document.addEventListener('DOMContentLoaded', restoreOptions);
+document.getElementById('saveTicketBtn').addEventListener('click', saveTicketConfig);
+document.getElementById('saveRefreshBtn').addEventListener('click', saveRefreshConfig);
+document.getElementById('clearTabStorageBtn').addEventListener('click', clearTabStorage);
+document.getElementById('clearAllStorageBtn').addEventListener('click', clearAllStorage);
+document.getElementById('refreshTicketBtn').addEventListener('click', saveRemainingConfig);
+document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
 
 function saveTicketConfig() {
   const requiredEles = [priceEle, ticketNumEle, showTimeEle, positionEle].filter((ele) => ele.required);
-  console.log('requiredEles', requiredEles);
 
   if (!isFieldValid(requiredEles)) {
     alert('請填寫票券資訊');
@@ -46,23 +39,18 @@ function saveTicketConfig() {
     return;
   }
 
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    console.group('save Ticket Config...');
-    const currTab = tabs[0];
+  getTabAndExecute(({ id, url }) => {
+    const seller = getSeller(url);
+    const storageKey = getTicketStorageId(seller, id);
+    const price = priceEle.value;
+    const showTime = showTimeEle.value;
+    const position = positionEle.value;
+    const ticketNum = ticketNumEle.options[ticketNumEle.selectedIndex].value;
+    const captchaAnswer = captchaAnswerEle.value;
 
-    if (currTab) {
-      const { id, url } = currTab;
-      const seller = getSeller(url);
-      const storageKey = getTicketStorageId(seller, id);
-      const price = priceEle.value;
-      const showTime = showTimeEle.value;
-      const position = positionEle.value;
-      const ticketNum = ticketNumEle.options[ticketNumEle.selectedIndex].value;
-      chrome.storage.local.set({ [storageKey]: { price, ticketNum, showTime, position } }, () =>
-        alert('儲存成功 - 票券設定')
-      );
-    }
-    console.groupEnd();
+    chrome.storage.local.set({ [storageKey]: { price, ticketNum, showTime, position, captchaAnswer } }, () =>
+      alert('儲存成功 - 票券設定')
+    );
   });
 }
 
@@ -73,22 +61,14 @@ function saveRefreshConfig() {
     return;
   }
 
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    console.group('save refresh Config...');
-    const currTab = tabs[0];
-
-    if (currTab) {
-      const { id, url } = currTab;
-      const seller = getSeller(url);
-      const storageKey = getRefreshStorageId(seller, id);
-      chrome.storage.local.set(
-        { [storageKey]: { hour: hourEle.value, minute: minuteEle.value, second: secondEle.value } },
-        () => alert('儲存成功 - 時間設定')
-      );
-
-      console.log('refresh setting', chrome.storage.local.get(storageKey));
-    }
-    console.groupEnd();
+  getTabInfoAndExecute(({ id, url }) => {
+    const seller = getSeller(url);
+    const storageKey = getRefreshStorageId(seller, id);
+    chrome.storage.local.set(
+      { [storageKey]: { hour: hourEle.value, minute: minuteEle.value, second: secondEle.value } },
+      () => alert('儲存成功 - 時間設定')
+    );
+    console.log('refresh setting', chrome.storage.local.get(storageKey));
   });
 }
 
@@ -99,36 +79,25 @@ function saveRemainingConfig() {
     return;
   }
 
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  getTabInfoAndExecute(({ id, url }) => {
     console.group('save remaining ticket Config...');
-    const currTab = tabs[0];
-
-    if (currTab) {
-      const { id, url } = currTab;
-      const seller = getSeller(url);
-      const storageKey = getRemainingStorageId(seller, id);
-      chrome.storage.local.set(
-        { [storageKey]: { interval: intervalEle.value } },
-        () => alert('儲存成功 - 間隔時間設定')
-      );
-
-      console.log('Refresh interval setting', chrome.storage.local.get(storageKey));
-    }
+    const seller = getSeller(url);
+    const storageKey = getRemainingStorageId(seller, id);
+    chrome.storage.local.set(
+      { [storageKey]: { interval: intervalEle.value } },
+      () => alert('儲存成功 - 間隔時間設定')
+    );
+    console.log('Refresh interval setting', chrome.storage.local.get(storageKey));
     console.groupEnd();
   });
 }
 
 function clearTabStorage() {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  getTabInfoAndExecute(({ id, url }) => {
     console.group('save refresh Config...');
-    const currTab = tabs[0];
-    if (currTab) {
-      const { id, url } = currTab;
-      const seller = getSeller(url);
-      const storageKeys = [getRefreshStorageId(seller, id), getTicketStorageId(seller, id)];
-      
-      chrome.storage.local.remove(storageKeys, () => alert('這分頁的票券 & 時間設定已清除'));
-    }
+    const seller = getSeller(url);
+    const storageKeys = [getRefreshStorageId(seller, id), getTicketStorageId(seller, id)];
+    chrome.storage.local.remove(storageKeys, () => alert('這分頁的票券 & 時間設定已清除'));
     console.groupEnd();
   });
 }
@@ -138,43 +107,25 @@ function clearAllStorage() {
 }
 
 function restoreOptions() {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const currTab = tabs[0];
-    if (currTab) {
-      const { id, url } = currTab;
-      // step 1: initial seller
-      const seller = getSeller(url);
-      document.getElementById('seller').value = seller;
-      if (seller === 'kktix') {
-        // TODO: kktix 價格相同的區域處理
-        hideUnnecessaryField([dateContainer, positionContainer], [showTimeEle, positionEle]);
-      } else {
-        hideUnnecessaryField([priceContainer], [priceEle, positionEle]);
-      }
+  getTabInfoAndExecute(async ({ id, url }) => {
+    console.group('restoreOptions...');
+    const seller = getSeller(url);
+    document.getElementById('seller').value = seller;
 
-      // step 2: restore ticket information
-      const ticketKey = getTicketStorageId(seller, id);
-      chrome.storage.local.get(ticketKey, (resp) => {
-        if (resp[ticketKey]) {
-          const { price, ticketNum, showTime, position } = resp[ticketKey];
-          priceEle.value = price;
-          ticketNumEle.selectedIndex = ticketNum - 1;
-          showTimeEle.value = showTime;
-          positionEle.value = position;
-        }
-      });
-
-      // step 3: restore Refresh information
-      const refreshKey = getRefreshStorageId(seller, id);
-      chrome.storage.local.get(refreshKey, (resp) => {
-        if (resp[refreshKey]) {
-          const { hour, minute, second } = resp[refreshKey];
-          hourEle.value = hour;
-          minuteEle.value = minute;
-          secondEle.value = second;
-        }
-      });
+    // step 1: initial seller
+    if (seller === 'kktix') {
+      hideUnnecessaryField([dateContainer, positionContainer], [showTimeEle, positionEle]);
+    } else {
+      hideUnnecessaryField([priceContainer], [priceEle, positionEle]);
     }
+
+    // step 2: restore ticket information
+    await Promise.all([
+      restoreData(getTicketStorageId(seller, id), [priceEle, ticketNumEle, showTimeEle, positionEle, captchaAnswerEle], restoreTicketInfo),
+      restoreData(getRefreshStorageId(seller, id), [hourEle, minuteEle, secondEle], restoreRefreshInfo),
+      restoreData(getRemainingStorageId(seller, id), [intervalEle], restoreIntervalInfo)
+    ]);
+
     console.groupEnd();
   });
 }
@@ -194,10 +145,72 @@ function stopChecking() {
   clearInterval(intervalId);
 }
 
-document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('saveTicketBtn').addEventListener('click', saveTicketConfig);
-document.getElementById('saveRefreshBtn').addEventListener('click', saveRefreshConfig);
-document.getElementById('clearTabStorageBtn').addEventListener('click', clearTabStorage);
-document.getElementById('clearAllStorageBtn').addEventListener('click', clearAllStorage);
-document.getElementById('refreshTicketBtn').addEventListener('click', saveRemainingConfig);
-document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
+// 從 storage 裡恢復 ticket 資訊
+function restoreTicketInfo(data, elements) {
+  const { price, ticketNum, showTime, position, captchaAnswer } = data;
+  elements[0].value = price;
+  elements[1].selectedIndex = ticketNum - 1;
+  elements[2].value = showTime;
+  elements[3].value = position;
+  elements[4].value = captchaAnswer;
+}
+
+// 從 storage 裡恢復 定時 refresh 資訊
+function restoreRefreshInfo(data, elements) {
+  const { hour, minute, second } = data;
+  elements[0].value = hour;
+  elements[1].value = minute;
+  elements[2].value = second;
+}
+
+// 從 storage 裡恢復 interval refresh 資訊
+function restoreIntervalInfo(data, elements) {
+  const { interval } = data;
+  elements[0].value = interval;
+}
+
+async function getDataFromLocalStorage(key) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, (result) => {
+      resolve(result[key] || null);
+    });
+  });
+}
+
+async function restoreData(key, elements, callback) {
+  const data = await getDataFromLocalStorage(key);
+  if (data) {
+    callback(data, elements);
+  }
+}
+
+async function getTabAndExecute(callback) {
+  const currTab = await getActiveTab();
+  if (currTab) {
+    callback(currTab);
+  }
+}
+
+async function getTabInfoAndExecute(callback) {
+  const tabInfo = await getTabInfo();
+  if (tabInfo) {
+    callback(tabInfo);
+  }
+}
+
+async function getTabInfo() {
+  const currTab = await getActiveTab();
+  return currTab ? { id: currTab.id, url: currTab.url } : null;
+}
+
+async function getActiveTab() {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      resolve(tabs[0] || null);
+    });
+  });
+}
+
+function isFieldValid(elements) {
+  return elements.every((ele) => ele && ele.value != null && ele.value.length > 0);
+}
