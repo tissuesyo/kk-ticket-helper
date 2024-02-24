@@ -30,6 +30,18 @@ document.getElementById('clearAllStorageBtn').addEventListener('click', clearAll
 document.getElementById('refreshTicketBtn').addEventListener('click', saveRemainingConfig);
 document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
 
+function getTicketStorageId(seller, tabId) {
+  return `${seller}-${tabId}`;
+}
+
+function getRefreshStorageId(seller, tabId) {
+  return `${seller}-refresh-${tabId}`;
+}
+
+function getRemainingStorageId(seller, tabId) {
+  return `${seller}-remaining-${tabId}`;
+}
+
 function saveTicketConfig() {
   const requiredEles = [priceEle, ticketNumEle, showTimeEle, positionEle].filter((ele) => ele.required);
 
@@ -111,7 +123,7 @@ function restoreOptions() {
     console.group('restoreOptions...');
     const seller = getSeller(url);
     document.getElementById('seller').value = seller;
-
+   
     // step 1: initial seller
     if (seller === 'kktix') {
       hideUnnecessaryField([dateContainer, positionContainer], [showTimeEle, positionEle]);

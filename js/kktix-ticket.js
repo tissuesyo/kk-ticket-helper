@@ -1,3 +1,5 @@
+const seller = 'kktix';
+
 function refreshPage(hours, minutes, seconds) {
   console.log(" === register refresh timer ===");
   const now = new Date();
@@ -67,7 +69,7 @@ function buyTicket(ticketInfo, tabId) {
   let isFindPosotion = checkTicketExisted(expectPrices, ticketNum);
   if (!isFindPosotion) {
     console.log('想買的區域都沒票囉! 趕快重新選擇了');
-    const remainingStorageKey = getRemainingStorageId(tabId);
+    const remainingStorageKey = getRemainingStorageId(seller, tabId);
 
     chrome.storage.local.get(remainingStorageKey, (resp) => {
       const interval = resp[remainingStorageKey]?.interval;
@@ -138,17 +140,17 @@ function checkIsCaptchaExisted() {
   return captchaDiv && captchaDiv[0] && captchaDiv[0].childElementCount > 0;
 }
 
-function getTicketStorageId(tabId) {
-  return `kktix-${tabId}`;
-}
+// function getTicketStorageId(tabId) {
+//   return `kktix-${tabId}`;
+// }
 
-function getRefreshStorageId(tabId) {
-  return `kktix-refresh-${tabId}`;
-}
+// function getRefreshStorageId(tabId) {
+//   return `kktix-refresh-${tabId}`;
+// }
 
-function getRemainingStorageId(tabId) {
-  return `kktix-remaining-${tabId}`;
-}
+// function getRemainingStorageId(tabId) {
+//   return `kktix-remaining-${tabId}`;
+// }
 
 function triggerRefresh(refeshStorageKey) {
   chrome.storage.local.get(refeshStorageKey, (resp) => {
@@ -162,11 +164,14 @@ function triggerRefresh(refeshStorageKey) {
 
 // TODO:
 function triggerIntervalRefresh(tabId) {
-  const remainingStorageKey = getRemainingStorageId(tabId);
+  console.log('do triggerIntervalRefresh...');
+  const remainingStorageKey = getRemainingStorageId(seller, tabId);
+  console.log('remainingStorageKey', remainingStorageKey);
   getAndExecuteFromLocalStorage(remainingStorageKey, (itervalData) => {
+    console.log('getAndExecuteFromLocalStorage');
     if (itervalData) {
       const { interval } = itervalData;
-      const ticketStorageKey = getTicketStorageId(tabId);
+      const ticketStorageKey = getTicketStorageId(seller, tabId);
       chrome.storage.local.get(ticketStorageKey, (resp) => {
         if (resp[ticketStorageKey] && interval) {
           triggerBuyTicket(tabId);
@@ -177,7 +182,7 @@ function triggerIntervalRefresh(tabId) {
 }
 
 function triggerBuyTicket(tabId) {
-  const ticketStorageKey = getTicketStorageId(tabId);
+  const ticketStorageKey = getTicketStorageId(seller, tabId);
   chrome.storage.local.get(ticketStorageKey, (resp) => {
     if (resp[ticketStorageKey]) {
       buyTicket(resp[ticketStorageKey], tabId);
@@ -188,15 +193,15 @@ function triggerBuyTicket(tabId) {
 function addStorageChangeListener(tabId) {
   chrome.storage.local.onChanged.addListener((changes) => {
     console.log(' === storage change === ', changes);
-    if (changes[getRefreshStorageId(tabId)]) {
+    if (changes[getRefreshStorageId(seller, tabId)]) {
       triggerRefresh(refreshStorageKey);
     }
 
-    if (changes[getTicketStorageId(tabId)]) {
+    if (changes[getTicketStorageId(seller, tabId)]) {
       triggerBuyTicket(tabId);
     }
 
-    if (changes[getRemainingStorageId(tabId)]) {
+    if (changes[getRemainingStorageId(seller, tabId)]) {
       triggerIntervalRefresh(tabId);
     }
   });
@@ -205,8 +210,10 @@ function addStorageChangeListener(tabId) {
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log(" !!! DOMContentLoaded !!! ");
+
     getTabIdAndExecute((tabId) => {
-      triggerRefresh(getRefreshStorageId(tabId));
+      console.log(" Page Load Tab ID", tabId);
+      triggerRefresh(getRefreshStorageId(seller, tabId));
       setTimeout(() => triggerIntervalRefresh(tabId));
       addStorageChangeListener(tabId);
     });
@@ -230,6 +237,7 @@ onElementLoaded("span[ng-if='purchasableAndSelectable']")
   })
   .catch((err) => console.error('some error', err));
 
+
 async function getTabId() {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ text: 'getTabId' }, (result) => {
@@ -252,8 +260,10 @@ async function getTabIdAndExecute(callback) {
 }
 
 async function getFromLocalStorage(key) {
+  console.log('getFromLocalStorage...');
   return new Promise((resolve) => {
     chrome.storage.local.get(key, (result) => {
+      console.log('chrome.storage.local result...', result);
       resolve(result[key] || null);
     });
   });
@@ -262,6 +272,7 @@ async function getFromLocalStorage(key) {
 async function getAndExecuteFromLocalStorage(key, callback, tabId) {
   try {
     const data = await getFromLocalStorage(key);
+    console.log('getAndExecuteFromLocalStorage data', data);
     if (data) {
       callback(data, tabId);
     }

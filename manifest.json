@@ -25,7 +25,7 @@
     {
       "matches": ["https://kktix.com/events/*/registrations/new"],
       "run_at": "document_start",
-      "js": ["js/kktix-ticket.js"]
+      "js": ["js/common.js", "js/kktix-ticket.js"]
     },
     {
       "matches": ["https://tixcraft.com/activity/detail/*", "https://tixcraft.com/activity/game/*"],
