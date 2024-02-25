@@ -99,7 +99,6 @@ function saveRemainingConfig() {
       { [storageKey]: { interval: intervalEle.value } },
       () => alert('儲存成功 - 間隔時間設定')
     );
-    console.log('Refresh interval setting', chrome.storage.local.get(storageKey));
     console.groupEnd();
   });
 }

@@ -7,27 +7,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ tabId: sender.tab.id });
   }
 
-  if (msg.action === 'checkForTickets') {
-    const alertEles = Array.from(document.querySelectorAll("div[class*='alert']"));
-    const [matchEle] = alertEles.filter((ele) => ele.innerText.includes('沒有任何可以購買的票券'));
-   
-    if (!matchEle) {
+  if (msg.text === 'getTicketWithCaptcha') {
+    const oneMinuteAsMs = 1 * 10 * 1000;
+      const currentTimeAsMs = new Date().getTime();
       const notificationOptions = {
         type: 'basic',
         iconUrl: './img/logo_48x48.png',
-        title: 'OMG 有票了',
-        message: `有剩票快搶`,
+        title: '有票了，但有 Captcha 要處理',
+        message: `第 ${sender.tab.index + 1} 分頁有票但有驗證碼要處理，快快 八粒~`,
         isClickable: true,
         priority: 2,
         eventTime: currentTimeAsMs + oneMinuteAsMs,
       };
       chrome.notifications.create(notificationOptions);
-  
+
       chrome.notifications.onClicked.addListener((notificationId) => {
-        chrome.tabs.update(msg.tabId, { selected: true });
+        chrome.tabs.update(tabId, { selected: true });
       });
-      clearInterval(intervalId);
-    }
   }
 });
 

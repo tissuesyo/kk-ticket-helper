@@ -1,7 +1,7 @@
 const seller = 'kktix';
 
 function refreshPage(hours, minutes, seconds) {
-  console.log(" === register refresh timer ===");
+  console.log(' === register refresh timer ===');
   const now = new Date();
   const expectTime = new Date();
   const currentHour = now.getHours();
@@ -45,7 +45,7 @@ function checkTicketExisted(expectPrices, tickectNumber) {
     const numberEle = matchPriceEle?.parentElement
       .querySelector("span[ng-if='purchasableAndSelectable']")
       ?.querySelector("input[type='text']");
-      
+
     if (numberEle) {
       numberEle.value = tickectNumber;
       numberEle.dispatchEvent(new Event('change'));
@@ -61,7 +61,7 @@ function checkTicketExisted(expectPrices, tickectNumber) {
 }
 
 function buyTicket(ticketInfo, tabId) {
-  console.log(" === execute buy ticket ===", ticketInfo);
+  console.log(' === execute buy ticket ===', ticketInfo);
   const { price, ticketNum, captchaAnswer } = ticketInfo;
   const expectPrices = price.split(',');
 
@@ -70,21 +70,25 @@ function buyTicket(ticketInfo, tabId) {
   if (!isFindPosotion) {
     console.log('想買的區域都沒票囉! 趕快重新選擇了');
     const remainingStorageKey = getRemainingStorageId(seller, tabId);
-
-    chrome.storage.local.get(remainingStorageKey, (resp) => {
-      const interval = resp[remainingStorageKey]?.interval;
-      if (interval && !isFindPosotion) {
-        setTimeout(() => window.location.reload(true), parseInt(interval, 10) * 1000);
+    const registerRefreshAction = (data) => {
+      if (data) {
+        setTimeout(() => window.location.reload(true), parseInt(data.interval, 10) * 1000);
       }
-    });
+    };
+    getAndExecuteFromLocalStorage(remainingStorageKey, registerRefreshAction, tabId);
   }
+
   // step 2: 如果有問問題的話，可帶入答案
   const captchaInput = document.querySelectorAll("input[name='captcha_answer']")[0];
   if (captchaInput) {
     captchaInput.value = captchaAnswer;
     captchaInput.dispatchEvent(new Event('change'));
+    // TODO: Send notification for captcha
+    if (!captchaAnswer) {
+      sendCaptchaNotice();
+    }
   }
- 
+
   // step 3: 同意服務條款
   const agreeChkbox = document.getElementById('person_agree_terms');
   if (agreeChkbox) {
@@ -95,44 +99,16 @@ function buyTicket(ticketInfo, tabId) {
   submit();
   // TODO: Captcha timing
   if (checkIsCaptchaExisted()) {
-    const intervalid = setInterval(() => submit(), 500);
-    setTimeout(() => clearInterval(intervalid), 5000);
+    const intervalid = setInterval(() => submit(), 200);
+    setTimeout(() => clearInterval(intervalid), 10000);
   }
 }
 
 function submit() {
   const buttonEles = Array.from(document.getElementsByClassName('btn-primary'));
   let [next] = buttonEles.filter((btn) => btn.textContent.includes('下一步'));
+  next?.focus();
   next?.click();
-}
-
-function onElementLoaded(elementToObserve, parentStaticElement) {
-  const promise = new Promise((resolve, reject) => {
-    try {
-      if (document.querySelector(elementToObserve)) {
-        resolve(true);
-        return;
-      }
-      const parentElement = parentStaticElement ? document.querySelector(parentStaticElement) : document;
-      const observer = new MutationObserver((mutationList, obsrvr) => {
-        const divToCheck = document.querySelector(elementToObserve);
-        if (divToCheck) {
-          obsrvr.disconnect(); // stop observing
-          resolve(true);
-        }
-      });
-
-      // start observing for dynamic div
-      observer.observe(parentElement, {
-        childList: true,
-        subtree: true,
-      });
-    } catch (e) {
-      console.error(e);
-      reject(Error('some issue... promise rejected'));
-    }
-  });
-  return promise;
 }
 
 function checkIsCaptchaExisted() {
@@ -140,61 +116,34 @@ function checkIsCaptchaExisted() {
   return captchaDiv && captchaDiv[0] && captchaDiv[0].childElementCount > 0;
 }
 
-// function getTicketStorageId(tabId) {
-//   return `kktix-${tabId}`;
-// }
-
-// function getRefreshStorageId(tabId) {
-//   return `kktix-refresh-${tabId}`;
-// }
-
-// function getRemainingStorageId(tabId) {
-//   return `kktix-remaining-${tabId}`;
-// }
-
-function triggerRefresh(refeshStorageKey) {
-  chrome.storage.local.get(refeshStorageKey, (resp) => {
-    if (resp[refeshStorageKey]) {
-      const { hour, minute, second } = resp[refeshStorageKey];
-      refreshPage(hour, minute, second);
-      console.log('triggerRefresh...');
-    }
-  });
+function triggerRefresh(tabId) {
+  const refeshStorageKey = getRefreshStorageId(seller, tabId);
+  const refreshAction = ({ hour, minute, second }) => refreshPage(hour, minute, second);
+  getAndExecuteFromLocalStorage(refeshStorageKey, refreshAction);
 }
 
-// TODO:
 function triggerIntervalRefresh(tabId) {
-  console.log('do triggerIntervalRefresh...');
   const remainingStorageKey = getRemainingStorageId(seller, tabId);
-  console.log('remainingStorageKey', remainingStorageKey);
-  getAndExecuteFromLocalStorage(remainingStorageKey, (itervalData) => {
-    console.log('getAndExecuteFromLocalStorage');
-    if (itervalData) {
-      const { interval } = itervalData;
-      const ticketStorageKey = getTicketStorageId(seller, tabId);
-      chrome.storage.local.get(ticketStorageKey, (resp) => {
-        if (resp[ticketStorageKey] && interval) {
-          triggerBuyTicket(tabId);
-        }
-      });
+  const checkBuyAction = (itervalData) => {
+    console.log(' triggerIntervalRefresh - itervalData...', itervalData);
+    if (itervalData?.interval) {
+      triggerBuyTicket(tabId);
     }
-  }, tabId);
+  };
+  getAndExecuteFromLocalStorage(remainingStorageKey, checkBuyAction, tabId);
 }
 
 function triggerBuyTicket(tabId) {
   const ticketStorageKey = getTicketStorageId(seller, tabId);
-  chrome.storage.local.get(ticketStorageKey, (resp) => {
-    if (resp[ticketStorageKey]) {
-      buyTicket(resp[ticketStorageKey], tabId);
-    }
-  });
+  const buyTicketAction = (ticketInfo) => buyTicket(ticketInfo, tabId);
+  getAndExecuteFromLocalStorage(ticketStorageKey, buyTicketAction, tabId);
 }
 
 function addStorageChangeListener(tabId) {
   chrome.storage.local.onChanged.addListener((changes) => {
     console.log(' === storage change === ', changes);
     if (changes[getRefreshStorageId(seller, tabId)]) {
-      triggerRefresh(refreshStorageKey);
+      triggerRefresh(tabId);
     }
 
     if (changes[getTicketStorageId(seller, tabId)]) {
@@ -209,23 +158,16 @@ function addStorageChangeListener(tabId) {
 
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    console.log(" !!! DOMContentLoaded !!! ");
-
+    console.log(' !!! DOMContentLoaded !!! ');
     getTabIdAndExecute((tabId) => {
-      console.log(" Page Load Tab ID", tabId);
-      triggerRefresh(getRefreshStorageId(seller, tabId));
+      console.log(' Page Load Tab ID', tabId);
+      // triggerBuyTicket(tabId);
+      triggerRefresh(tabId);
       setTimeout(() => triggerIntervalRefresh(tabId));
       addStorageChangeListener(tabId);
     });
   } catch (error) {
     console.error('Error during DOMContentLoaded:', error);
-  }
-});
-
-// TODO: captcha timing
-window.addEventListener('load', () => {
-  if (checkIsCaptchaExisted()) {
-    submit();
   }
 });
 
@@ -237,46 +179,35 @@ onElementLoaded("span[ng-if='purchasableAndSelectable']")
   })
   .catch((err) => console.error('some error', err));
 
+onElementLoaded('iframe[title="reCAPTCHA 驗證問題將在兩分鐘後失效"]')
+.then(() => {
+  setTimeout(() => subscribeCaptcha(), 1000);
+})
+.catch((err) => console.error('some error', err));
 
-async function getTabId() {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ text: 'getTabId' }, (result) => {
-      if (result.tabId) {
-        resolve(result.tabId);
-      } else {
-        reject(new Error('Unable to get tabId.'));
+function subscribeCaptcha() {
+  // 找到包含 Captcha iframe 的父層 div
+  const parentDivsWithCaptcha = document.querySelectorAll(
+    'div:has(iframe[title="reCAPTCHA 驗證問題將在兩分鐘後失效"])'
+  );
+  console.log(' --- subscribeCaptcha --- ', parentDivsWithCaptcha);
+  const observer = new MutationObserver((mutationsList) => {
+    console.log(' --- parentDivsWithCaptcha MutationObserver--- ', mutationsList);
+    const hasCaptcha = mutationsList.some((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        return mutation.target.style.visibility === 'visible';
       }
+      return false;
     });
-  });
-}
-  
-async function getTabIdAndExecute(callback) {
-  try {
-    const tabId = await getTabId();
-    callback(tabId);
-  } catch (error) {
-    console.error('Error getting tabId:', error);
-  }
-}
 
-async function getFromLocalStorage(key) {
-  console.log('getFromLocalStorage...');
-  return new Promise((resolve) => {
-    chrome.storage.local.get(key, (result) => {
-      console.log('chrome.storage.local result...', result);
-      resolve(result[key] || null);
-    });
-  });
-}
-
-async function getAndExecuteFromLocalStorage(key, callback, tabId) {
-  try {
-    const data = await getFromLocalStorage(key);
-    console.log('getAndExecuteFromLocalStorage data', data);
-    if (data) {
-      callback(data, tabId);
+    if (hasCaptcha) {
+      console.log('出現圖形驗證的 captcha');
+      sendCaptchaNotice();
     }
-  } catch (error) {
-    console.error(`Error getting data for key ${key}:`, error);
-  }
+  });
+
+  // 開始觀察每個包含 iframe 的父層 div
+  parentDivsWithCaptcha.forEach((parentDiv) => {
+    observer.observe(parentDiv, { attributes: true });
+  });
 }
