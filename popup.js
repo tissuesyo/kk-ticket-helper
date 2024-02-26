@@ -29,6 +29,7 @@ document.getElementById('clearTabStorageBtn').addEventListener('click', clearTab
 document.getElementById('clearAllStorageBtn').addEventListener('click', clearAllStorage);
 document.getElementById('refreshTicketBtn').addEventListener('click', saveRemainingConfig);
 document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
+document.getElementById('continusNextBtn').addEventListener('click', triggerNext);
 
 function getTicketStorageId(seller, tabId) {
   return `${seller}-${tabId}`;
@@ -40,6 +41,10 @@ function getRefreshStorageId(seller, tabId) {
 
 function getRemainingStorageId(seller, tabId) {
   return `${seller}-remaining-${tabId}`;
+}
+
+function getAutoNextStorageId(seller, tabId) {
+  return `${seller}-autoNext-${tabId}`;
 }
 
 function saveTicketConfig() {
@@ -224,4 +229,19 @@ async function getActiveTab() {
 
 function isFieldValid(elements) {
   return elements.every((ele) => ele && ele.value != null && ele.value.length > 0);
+}
+
+function triggerNext() {
+  console.log('click triggerNext...');
+
+  getTabInfoAndExecute(({ id, url }) => {
+    console.group('save auto next...');
+    const seller = getSeller(url);
+    const storageKey = getAutoNextStorageId(seller, id);
+    chrome.storage.local.set(
+      { [storageKey]: true },
+      () => console.log('儲存成功 - auto next 設定')
+    );
+    console.groupEnd();
+  });
 }

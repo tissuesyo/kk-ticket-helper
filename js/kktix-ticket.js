@@ -1,4 +1,7 @@
 const seller = 'kktix';
+window.alert = function(message) {
+  console.log('Custom alert:', message);
+};
 
 function refreshPage(hours, minutes, seconds) {
   console.log(' === register refresh timer ===');
@@ -139,6 +142,20 @@ function triggerBuyTicket(tabId) {
   getAndExecuteFromLocalStorage(ticketStorageKey, buyTicketAction, tabId);
 }
 
+function triggerAutoNext(tabId) {
+  const ticketStorageKey = getAutoNextStorageId(seller, tabId);
+  
+  getAndExecuteFromLocalStorage(ticketStorageKey, (isAutoNext)=> {
+    if(isAutoNext) {
+      window.alert = (msg) => console.log(msg);
+      console.log('triggerAutoNext.....', window.alert);
+      setInterval(() => {
+        submit();
+      }, 500);
+    }
+  }, tabId);
+}
+
 function addStorageChangeListener(tabId) {
   chrome.storage.local.onChanged.addListener((changes) => {
     console.log(' === storage change === ', changes);
@@ -153,6 +170,10 @@ function addStorageChangeListener(tabId) {
     if (changes[getRemainingStorageId(seller, tabId)]) {
       triggerIntervalRefresh(tabId);
     }
+
+    if (changes[getAutoNextStorageId(seller, tabId)]) {
+      triggerAutoNext(tabId);
+    }
   });
 }
 
@@ -165,6 +186,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       triggerRefresh(tabId);
       setTimeout(() => triggerIntervalRefresh(tabId));
       addStorageChangeListener(tabId);
+      triggerAutoNext(tabId);
     });
   } catch (error) {
     console.error('Error during DOMContentLoaded:', error);
@@ -181,6 +203,7 @@ onElementLoaded("span[ng-if='purchasableAndSelectable']")
 
 onElementLoaded('iframe[title="reCAPTCHA 驗證問題將在兩分鐘後失效"]')
 .then(() => {
+  console.log('reCAPTCHA iframe occur');
   setTimeout(() => subscribeCaptcha(), 1000);
 })
 .catch((err) => console.error('some error', err));
@@ -202,6 +225,7 @@ function subscribeCaptcha() {
 
     if (hasCaptcha) {
       console.log('出現圖形驗證的 captcha');
+      submit();
       sendCaptchaNotice();
     }
   });

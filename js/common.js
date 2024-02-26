@@ -10,6 +10,10 @@ function getRemainingStorageId(seller, tabId) {
   return `${seller}-remaining-${tabId}`;
 }
 
+function getAutoNextStorageId(seller, tabId) {
+  return `${seller}-autoNext-${tabId}`;
+}
+
 async function getTabId() {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ text: 'getTabId' }, (result) => {
@@ -66,7 +70,7 @@ function onElementLoaded(elementToObserve, parentStaticElement) {
       const observer = new MutationObserver((mutationList, obsrvr) => {
         const divToCheck = document.querySelector(elementToObserve);
         if (divToCheck) {
-          obsrvr.disconnect(); // stop observing
+          // obsrvr.disconnect(); // stop observing
           resolve(true);
         }
       });
