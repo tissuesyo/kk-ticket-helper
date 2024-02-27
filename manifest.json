@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Ticker Helper",
-  "version": "1",
+  "name": "Ticket Helper",
+  "version": "2",
   "description": "搶票小幫手",
   "icons": {
     "16": "/img/logo_16x16.png",
