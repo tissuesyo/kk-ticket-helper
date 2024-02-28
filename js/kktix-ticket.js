@@ -109,6 +109,11 @@ function buyTicket(ticketInfo, tabId) {
 
 function submit() {
   const buttonEles = Array.from(document.getElementsByClassName('btn-primary'));
+
+  let [place] = buttonEles.filter((btn) => btn.textContent.includes('電腦配位'));
+  place?.focus();
+  place?.click();
+  
   let [next] = buttonEles.filter((btn) => btn.textContent.includes('下一步'));
   next?.focus();
   next?.click();
