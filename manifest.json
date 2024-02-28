@@ -61,5 +61,11 @@
       },
       "description": "Open popup.html"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["js/inject.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

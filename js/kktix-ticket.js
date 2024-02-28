@@ -1,7 +1,4 @@
 const seller = 'kktix';
-window.alert = function(message) {
-  console.log('Custom alert:', message);
-};
 
 function refreshPage(hours, minutes, seconds) {
   console.log(' === register refresh timer ===');
@@ -109,13 +106,10 @@ function buyTicket(ticketInfo, tabId) {
 
 function submit() {
   const buttonEles = Array.from(document.getElementsByClassName('btn-primary'));
-
   let [place] = buttonEles.filter((btn) => btn.textContent.includes('電腦配位'));
-  place?.focus();
   place?.click();
   
   let [next] = buttonEles.filter((btn) => btn.textContent.includes('下一步'));
-  next?.focus();
   next?.click();
 }
 
@@ -152,11 +146,7 @@ function triggerAutoNext(tabId) {
   
   getAndExecuteFromLocalStorage(ticketStorageKey, (isAutoNext)=> {
     if(isAutoNext) {
-      window.alert = (msg) => console.log(msg);
-      console.log('triggerAutoNext.....', window.alert);
-      setInterval(() => {
-        submit();
-      }, 500);
+      setInterval(() => submit(), 300);
     }
   }, tabId);
 }
@@ -182,12 +172,22 @@ function addStorageChangeListener(tabId) {
   });
 }
 
+function injectScript() {
+  console.log('injectScript successfully to replace window alert');
+  sessionStorage.setItem('replaceAlert', 'window.alert = (message) => console.log("KKTIX message:", message); ');
+  const url = chrome.runtime.getURL('js/inject.js');
+  const script = document.createElement("script");
+  script.src = url;
+  document.head.appendChild(script);
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log(' !!! DOMContentLoaded !!! ');
     getTabIdAndExecute((tabId) => {
       console.log(' Page Load Tab ID', tabId);
       // triggerBuyTicket(tabId);
+      injectScript();
       triggerRefresh(tabId);
       setTimeout(() => triggerIntervalRefresh(tabId));
       addStorageChangeListener(tabId);
