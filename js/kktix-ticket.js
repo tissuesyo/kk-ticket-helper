@@ -1,4 +1,5 @@
 const seller = 'kktix';
+let autoSubmitIntervalId = null;
 
 function refreshPage(hours, minutes, seconds) {
   console.log(' === register refresh timer ===');
@@ -70,9 +71,9 @@ function buyTicket(ticketInfo, tabId) {
   if (!isFindPosotion) {
     console.log('想買的區域都沒票囉! 趕快重新選擇了');
     const remainingStorageKey = getRemainingStorageId(seller, tabId);
-    const registerRefreshAction = (data) => {
-      if (data) {
-        setTimeout(() => window.location.reload(true), parseInt(data.interval, 10) * 1000);
+    const registerRefreshAction = ({interval = 0} = {}) => {
+      if (interval > 0) {
+        setTimeout(() => window.location.reload(true), parseInt(interval, 10) * 1000);
       }
     };
     getAndExecuteFromLocalStorage(remainingStorageKey, registerRefreshAction, tabId);
@@ -126,9 +127,9 @@ function triggerRefresh(tabId) {
 
 function triggerIntervalRefresh(tabId) {
   const remainingStorageKey = getRemainingStorageId(seller, tabId);
-  const checkBuyAction = (itervalData) => {
-    console.log(' triggerIntervalRefresh - itervalData...', itervalData);
-    if (itervalData?.interval) {
+  const checkBuyAction = ({interval = 0} = {}) => {
+    console.log(' triggerIntervalRefresh - interval...', interval);
+    if (interval || interval === 0) {
       triggerBuyTicket(tabId);
     }
   };
@@ -142,13 +143,8 @@ function triggerBuyTicket(tabId) {
 }
 
 function triggerAutoNext(tabId) {
-  const ticketStorageKey = getAutoNextStorageId(seller, tabId);
-  
-  getAndExecuteFromLocalStorage(ticketStorageKey, (isAutoNext)=> {
-    if(isAutoNext) {
-      setInterval(() => submit(), 300);
-    }
-  }, tabId);
+  // 原本有卡 storage 要開啟才會執行，現在先改成預設就會執行
+  autoSubmitIntervalId = setInterval(() => submit(), 300);
 }
 
 function addStorageChangeListener(tabId) {
@@ -164,10 +160,6 @@ function addStorageChangeListener(tabId) {
 
     if (changes[getRemainingStorageId(seller, tabId)]) {
       triggerIntervalRefresh(tabId);
-    }
-
-    if (changes[getAutoNextStorageId(seller, tabId)]) {
-      triggerAutoNext(tabId);
     }
   });
 }
@@ -185,7 +177,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log(' !!! DOMContentLoaded !!! ');
     getTabIdAndExecute((tabId) => {
-      console.log(' Page Load Tab ID', tabId);
       // triggerBuyTicket(tabId);
       injectScript();
       triggerRefresh(tabId);

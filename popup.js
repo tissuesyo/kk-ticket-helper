@@ -19,9 +19,6 @@ const secondEle = document.getElementById('second');
 // 搶清票 Field Element
 const intervalEle = document.getElementById('intervalInput');
 
-// 清票檢查
-let intervalId;
-
 document.addEventListener('DOMContentLoaded', restoreOptions);
 document.getElementById('saveTicketBtn').addEventListener('click', saveTicketConfig);
 document.getElementById('saveRefreshBtn').addEventListener('click', saveRefreshConfig);
@@ -158,7 +155,9 @@ function getSeller(url) {
 }
 
 function stopChecking() {
-  clearInterval(intervalId);
+  intervalEle.value = 0;
+  intervalEle.dispatchEvent(new Event('change'));
+  saveRemainingConfig();
 }
 
 // 從 storage 裡恢復 ticket 資訊
@@ -233,15 +232,12 @@ function isFieldValid(elements) {
 
 function triggerNext() {
   console.log('click triggerNext...');
-
   getTabInfoAndExecute(({ id, url }) => {
-    console.group('save auto next...');
     const seller = getSeller(url);
     const storageKey = getAutoNextStorageId(seller, id);
     chrome.storage.local.set(
       { [storageKey]: true },
       () => console.log('儲存成功 - auto next 設定')
     );
-    console.groupEnd();
   });
 }
