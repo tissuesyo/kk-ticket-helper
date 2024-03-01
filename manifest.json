@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ticket Helper",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "搶票小幫手",
   "icons": {
     "16": "/img/logo_16x16.png",
