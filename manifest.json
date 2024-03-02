@@ -30,7 +30,7 @@
     {
       "matches": ["https://tixcraft.com/activity/detail/*", "https://tixcraft.com/activity/game/*"],
       "run_at": "document_start",
-      "js": ["js/tixcraft-step1-date.js"]
+      "js": ["js/common.js", "js/tixcraft-step1-date.js"]
     },
     {
       "matches": ["https://tixcraft.com/ticket/area/*"],

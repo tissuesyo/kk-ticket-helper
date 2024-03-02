@@ -26,7 +26,6 @@ document.getElementById('clearTabStorageBtn').addEventListener('click', clearTab
 document.getElementById('clearAllStorageBtn').addEventListener('click', clearAllStorage);
 document.getElementById('refreshTicketBtn').addEventListener('click', saveRemainingConfig);
 document.getElementById('stopRefreshTicketBtn').addEventListener('click', stopChecking);
-document.getElementById('continusNextBtn').addEventListener('click', triggerNext);
 
 function getTicketStorageId(seller, tabId) {
   return `${seller}-${tabId}`;

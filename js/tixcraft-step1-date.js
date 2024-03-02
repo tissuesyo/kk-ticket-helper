@@ -36,35 +36,6 @@ function buyTicket(showTime) {
   setTimeout(() => buyBtn?.click(), 300);
 }
 
-function onElementLoaded(elementToObserve, parentStaticElement) {
-  const promise = new Promise((resolve, reject) => {
-    try {
-      if (document.querySelector(elementToObserve)) {
-        resolve(true);
-        return;
-      }
-      const parentElement = parentStaticElement ? document.querySelector(parentStaticElement) : document;
-      const observer = new MutationObserver((mutationList, obsrvr) => {
-        const divToCheck = document.querySelector(elementToObserve);
-        if (divToCheck) {
-          obsrvr.disconnect(); // stop observing
-          resolve(true);
-        }
-      });
-
-      // start observing for dynamic div
-      observer.observe(parentElement, {
-        childList: true,
-        subtree: true,
-      });
-    } catch (e) {
-      console.error(e);
-      reject(Error('some issue... promise rejected'));
-    }
-  });
-  return promise;
-}
-
 function getTicketStorageId(tabId) {
   return `tixcraft-${tabId}`;
 }
@@ -74,24 +45,15 @@ function getRefreshStorageId(tabId) {
 }
 
 function triggerRefresh(refeshStorageKey) {
-  chrome.storage.local.get(refeshStorageKey, (resp) => {
-    if (resp[refeshStorageKey]) {
-      const { hour, minute, second } = resp[refeshStorageKey];
-      refreshPage(hour, minute, second);
-      console.log('triggerRefresh...');
-    }
-  });
+  console.log('triggerRefresh...');
+  const refreshAction = ({ hour, minute, second }) => refreshPage(hour, minute, second);
+  getAndExecuteFromLocalStorage(refeshStorageKey, refreshAction);
 }
 
 function triggerBuyTicket(ticketStorageKey) {
-  console.log("triggerBuyTicket", ticketStorageKey);
-  chrome.storage.local.get(ticketStorageKey, (resp) => {
-    if (resp[ticketStorageKey]) {
-      console.log("find storage", resp[ticketStorageKey]);
-      const { showTime } = resp[ticketStorageKey];
-      buyTicket(showTime);
-    }
-  });
+  console.log("triggerBuyTicket...", ticketStorageKey);
+  const buyAction = ({ showTime }) => buyTicket(showTime);
+  getAndExecuteFromLocalStorage(ticketStorageKey, buyAction);
 }
 
 function addStorageChangeListener(tabId) {
@@ -116,7 +78,7 @@ function showConcertList(){
 
 window.addEventListener('DOMContentLoaded', () => {
   console.log(" !!! Step 1: DOMContentLoaded !!! ");
-  chrome.runtime.sendMessage({ text: 'getTabId' }, ({ tabId }) => {
+  getTabIdAndExecute((tabId) => {
     triggerRefresh(getRefreshStorageId(tabId));
     addStorageChangeListener(tabId);
     showConcertList();
@@ -128,13 +90,10 @@ onElementLoaded("li[class='buy']")
   .then(() => showConcertList())
   .catch((err) => console.error('some error', err));
 
-
 onElementLoaded("div[id='gameList']")
   .then(() => {
     console.group('concert list occur');
-    chrome.runtime.sendMessage({ text: 'getTabId' }, ({ tabId }) => {
-      triggerBuyTicket(getTicketStorageId(tabId));
-    });
+    getTabIdAndExecute((tabId) => triggerBuyTicket(getTicketStorageId(tabId)));
     console.groupEnd();
   })
   .catch((err) => console.error('some error', err));
