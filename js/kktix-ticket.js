@@ -71,7 +71,7 @@ function buyTicket(ticketInfo, tabId) {
   if (!isFindPosotion) {
     console.log('想買的區域都沒票囉! 趕快重新選擇了');
     const remainingStorageKey = getRemainingStorageId(seller, tabId);
-    const registerRefreshAction = ({interval = 0} = {}) => {
+    const registerRefreshAction = ({ interval = 0 } = {}) => {
       if (interval > 0) {
         setTimeout(() => window.location.reload(true), parseInt(interval, 10) * 1000);
       }
@@ -107,11 +107,12 @@ function buyTicket(ticketInfo, tabId) {
 
 function submit() {
   const buttonEles = Array.from(document.getElementsByClassName('btn-primary'));
-  let [place] = buttonEles.filter((btn) => btn.textContent.includes('電腦配位'));
-  place?.click();
-  
-  let [next] = buttonEles.filter((btn) => btn.textContent.includes('下一步'));
-  next?.click();
+  buttonEles
+    .filter((btn) => btn.textContent.includes('電腦配位') || btn.textContent.includes('下一步'))
+    .forEach((btn) => {
+      btn?.scrollIntoView({ block: 'center' });
+      btn?.click();
+    });
 }
 
 function checkIsCaptchaExisted() {
@@ -127,7 +128,7 @@ function triggerRefresh(tabId) {
 
 function triggerIntervalRefresh(tabId) {
   const remainingStorageKey = getRemainingStorageId(seller, tabId);
-  const checkBuyAction = ({interval = 0} = {}) => {
+  const checkBuyAction = ({ interval = 0 } = {}) => {
     console.log(' triggerIntervalRefresh - interval...', interval);
     if (interval || interval === 0) {
       triggerBuyTicket(tabId);
@@ -168,7 +169,7 @@ function injectScript() {
   console.log('injectScript successfully to replace window alert');
   sessionStorage.setItem('replaceAlert', 'window.alert = (message) => console.log("KKTIX message:", message); ');
   const url = chrome.runtime.getURL('js/inject.js');
-  const script = document.createElement("script");
+  const script = document.createElement('script');
   script.src = url;
   document.head.appendChild(script);
 }
@@ -198,11 +199,11 @@ onElementLoaded("span[ng-if='purchasableAndSelectable']")
   .catch((err) => console.error('some error', err));
 
 onElementLoaded('iframe[title="reCAPTCHA 驗證問題將在兩分鐘後失效"]')
-.then(() => {
-  console.log('reCAPTCHA iframe occur');
-  setTimeout(() => subscribeCaptcha(), 1000);
-})
-.catch((err) => console.error('some error', err));
+  .then(() => {
+    console.log('reCAPTCHA iframe occur');
+    setTimeout(() => subscribeCaptcha(), 1000);
+  })
+  .catch((err) => console.error('some error', err));
 
 function subscribeCaptcha() {
   // 找到包含 Captcha iframe 的父層 div

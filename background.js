@@ -8,22 +8,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.text === 'getTicketWithCaptcha') {
-    const oneMinuteAsMs = 1 * 10 * 1000;
-      const currentTimeAsMs = new Date().getTime();
-      const notificationOptions = {
-        type: 'basic',
-        iconUrl: './img/logo_48x48.png',
-        title: '有票了，但有 Captcha 要處理',
-        message: `第 ${sender.tab.index + 1} 分頁有票但有驗證碼要處理，快快 八粒~`,
-        isClickable: true,
-        priority: 2,
-        eventTime: currentTimeAsMs + oneMinuteAsMs,
-      };
-      chrome.notifications.create(notificationOptions);
-
-      chrome.notifications.onClicked.addListener((notificationId) => {
-        chrome.tabs.update(tabId, { selected: true });
-      });
+    sendNotificaiotn('悲劇，有 Captcha 要處理', '有驗證碼要處理，快 八粒~', sender.tab.id, sender.tab.index);
   }
 });
 
@@ -41,22 +26,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }[seller](url);
 
     if (isNeedNotice) {
-      const oneMinuteAsMs = 1 * 10 * 1000;
-      const currentTimeAsMs = new Date().getTime();
-      const notificationOptions = {
-        type: 'basic',
-        iconUrl: './img/logo_48x48.png',
-        title: '買到票囉',
-        message: `第 ${index + 1} 分頁有進入到選位畫面，快快 八粒~`,
-        isClickable: true,
-        priority: 2,
-        eventTime: currentTimeAsMs + oneMinuteAsMs,
-      };
-      chrome.notifications.create(notificationOptions);
-
-      chrome.notifications.onClicked.addListener((notificationId) => {
-        chrome.tabs.update(tabId, { selected: true });
-      });
+      sendNotificaiotn('買到票囉', '進到選位畫面了，感人 八粒~', tabId, index);
     }
   }
 });
@@ -97,4 +67,23 @@ function isGetIbonTicket(url) {
 function isGetTixcraftTicket(url) {
   // example: https://tixcraft.com/ticket/ticket/23_pennytp/14663/5/44
   return url.startsWith('https://tixcraft.com/ticket/ticket/');
+}
+
+function sendNotificaiotn(title, message, tabId, tabIndex) {
+  const oneMinuteAsMs = 1 * 10 * 1000;
+    const currentTimeAsMs = new Date().getTime();
+    const notificationOptions = {
+        type: 'basic',
+        iconUrl: './img/logo_48x48.png',
+        title,
+        message: `第 ${tabIndex + 1} 分頁 - ${message}`,
+        isClickable: true,
+        priority: 2,
+        eventTime: currentTimeAsMs + oneMinuteAsMs,
+      };
+      chrome.notifications.create(notificationOptions);
+
+      chrome.notifications.onClicked.addListener((notificationId) => {
+        chrome.tabs.update(tabId, { selected: true });
+      });
 }
