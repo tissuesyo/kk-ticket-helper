@@ -84,6 +84,7 @@ function buyTicket(ticketInfo, tabId) {
   if (captchaInput) {
     captchaInput.value = captchaAnswer;
     captchaInput.dispatchEvent(new Event('change'));
+    captchaInput.nextElementSibling?.click();
     // TODO: Send notification for captcha
     if (!captchaAnswer) {
       sendCaptchaNotice();
@@ -98,6 +99,7 @@ function buyTicket(ticketInfo, tabId) {
 
   // step 4: 送出
   submit();
+  triggerAutoNext();
   // TODO: Captcha timing
   if (checkIsCaptchaExisted()) {
     const intervalid = setInterval(() => submit(), 200);
@@ -143,7 +145,7 @@ function triggerBuyTicket(tabId) {
   getAndExecuteFromLocalStorage(ticketStorageKey, buyTicketAction, tabId);
 }
 
-function triggerAutoNext(tabId) {
+function triggerAutoNext() {
   // 原本有卡 storage 要開啟才會執行，現在先改成預設就會執行
   autoSubmitIntervalId = setInterval(() => submit(), 300);
 }
@@ -183,7 +185,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       triggerRefresh(tabId);
       setTimeout(() => triggerIntervalRefresh(tabId));
       addStorageChangeListener(tabId);
-      triggerAutoNext(tabId);
     });
   } catch (error) {
     console.error('Error during DOMContentLoaded:', error);

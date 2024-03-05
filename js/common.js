@@ -70,7 +70,7 @@ function onElementLoaded(elementToObserve, parentStaticElement) {
       const observer = new MutationObserver((mutationList, obsrvr) => {
         const divToCheck = document.querySelector(elementToObserve);
         if (divToCheck) {
-          // obsrvr.disconnect(); // stop observing
+          obsrvr.disconnect(); // stop observing
           resolve(true);
         }
       });
