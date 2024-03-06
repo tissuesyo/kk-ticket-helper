@@ -151,7 +151,7 @@ function triggerAutoNext() {
     const iframe = document.querySelectorAll('#safeview-ui-frame');
     if (iframe.length > 0) {
       const okBtn = iframe.contentDocument.querySelectorAll('a[id="alert-ok-button"]');
-      okBtn.click();
+      okBtn?.click();
     }
     submit();
   }, 500);
