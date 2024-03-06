@@ -147,7 +147,14 @@ function triggerBuyTicket(tabId) {
 
 function triggerAutoNext() {
   // 原本有卡 storage 要開啟才會執行，現在先改成預設就會執行
-  autoSubmitIntervalId = setInterval(() => submit(), 300);
+  autoSubmitIntervalId = setInterval(() => {
+    const iframe = document.querySelectorAll('#safeview-ui-frame');
+    if (iframe.length > 0) {
+      const okBtn = iframe.contentDocument.querySelectorAll('a[id="alert-ok-button"]');
+      okBtn.click();
+    }
+    submit();
+  }, 500);
 }
 
 function addStorageChangeListener(tabId) {
